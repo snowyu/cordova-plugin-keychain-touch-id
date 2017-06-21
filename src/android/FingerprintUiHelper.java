@@ -33,6 +33,7 @@ public class FingerprintUiHelper extends FingerprintManager.AuthenticationCallba
     static final long ERROR_TIMEOUT_MILLIS = 1600;
     static final long SUCCESS_DELAY_MILLIS = 1300;
 
+
     private final Context mContext;
     private final FingerprintManager mFingerprintManager;
     private final ImageView mIcon;
@@ -102,13 +103,13 @@ public class FingerprintUiHelper extends FingerprintManager.AuthenticationCallba
     }
 
     @Override
-    public void onAuthenticationError(int errMsgId, CharSequence errString) {
+    public void onAuthenticationError(final int errMsgId, final CharSequence errString) {
         if (!mSelfCancelled) {
             showError(errString);
             mIcon.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    mCallback.onError();
+                    mCallback.onError(errMsgId,errString.toString());
                 }
             }, ERROR_TIMEOUT_MILLIS);
         }
@@ -183,6 +184,6 @@ public class FingerprintUiHelper extends FingerprintManager.AuthenticationCallba
 
         void onAuthenticated();
 
-        void onError();
+        void onError(int errMsgId, String errString);
     }
 }
