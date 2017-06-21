@@ -93,6 +93,26 @@ So instead of checking the fingerprint after `isAvailable` add another check.
 In case `didFingerprintDatabaseChange` returns `true` you probably want to re-authenticate your user
 before accepting valid fingerprints again.
 
+```js
+window.plugins.touchid.isAvailable(
+    // success handler; available
+    function() {
+      window.plugins.touchid.didFingerprintDatabaseChange(
+          function(changed) {
+            if (changed) {
+              // re-auth the user by asking for his credentials before allowing a fingerprint scan again
+            } else {
+              // call the fingerprint scanner
+            }
+          }
+      );
+    },
+    // error handler; not available
+    function(msg) {
+      // use a more traditional auth mechanism
+    }
+);
+```
 
 ## Android quirks
 
