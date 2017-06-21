@@ -54,6 +54,8 @@
 #define FPP_ERROR_MSG_USER_FALLBACK                             @"Canceled by user for fallback authentication."
 
 
+static NSString *const FingerprintDatabaseStateKey = @"FingerprintDatabaseStateKey";
+
 @implementation TouchID
 
 /**
@@ -123,6 +125,11 @@
            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
        }
     }
+}
+
+- (void)setLocale:(CDVInvokedUrlCommand*)command{
+  CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+  [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
 /**
@@ -293,6 +300,15 @@
                             errorMsg = FPP_ERROR_MSG_AUTHENTICATION_FAILED;
                         }
 
+                        if (error.code == LAErrorTouchIDNotAvailable){
+                            errorCode = FPP_ERROR_CODE_TOUCHID_NOT_AVAILABLE_ON_THIS_DEVICE;
+                            errorMsg = FPP_ERROR_MSG_TOUCHID_NOT_AVAILABLE_ON_THIS_DEVICE;
+                        }
+                        if (error.code == LAErrorTouchIDNotEnrolled){
+                            errorCode = FPP_ERROR_CODE_NOT_ENROLLED;
+                            errorMsg = FPP_ERROR_MSG_NOT_ENROLLED;
+                        }
+
                         NSDictionary *extErrorDictionary = @{@"OS":@"iOS",@"code":[NSString stringWithFormat:@"%li", (long)error.code],@"desc":error.localizedDescription};
                         NSDictionary *errorDictionary = @{@"errCode":[NSString stringWithFormat:@"%li", (long)errorCode],@"errMsg":errorMsg, @"ext": extErrorDictionary};
                         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
@@ -315,6 +331,15 @@
                     errorMsg = FPP_ERROR_MSG_TOUCHID_LOCKED_OUT; //probably for Application retry limit exceeded.
                 }
 
+                if (error.code == LAErrorTouchIDNotAvailable){
+                    errorCode = FPP_ERROR_CODE_TOUCHID_NOT_AVAILABLE_ON_THIS_DEVICE;
+                    errorMsg = FPP_ERROR_MSG_TOUCHID_NOT_AVAILABLE_ON_THIS_DEVICE;
+                }
+                if (error.code == LAErrorTouchIDNotEnrolled){
+                    errorCode = FPP_ERROR_CODE_NOT_ENROLLED;
+                    errorMsg = FPP_ERROR_MSG_NOT_ENROLLED;
+                }
+
                 //If an error is returned from LA Context (should always be true in this situation)
                 NSDictionary *extErrorDictionary = @{@"OS":@"iOS",@"code":[NSString stringWithFormat:@"%li", (long)error.code],@"desc":error.localizedDescription};
                 NSDictionary *errorDictionary = @{@"errCode":[NSString stringWithFormat:@"%li", (long)errorCode],@"errMsg":errorMsg, @"ext": extErrorDictionary};
@@ -335,5 +360,44 @@
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }
+}
+
+- (void) didFingerprintDatabaseChange:(CDVInvokedUrlCommand*)command {
+    // Get enrollment state
+    [self.commandDelegate runInBackground:^{
+        LAContext *laContext = [[LAContext alloc] init];
+        NSError *error = nil;
+
+        // we expect the dev to have checked 'isAvailable' already so this should not return an error,
+        // we do however need to run canEvaluatePolicy here in order to get a non-nil evaluatedPolicyDomainState
+        if (![laContext canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:&error]) {
+            [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]] callbackId:command.callbackId];
+            return;
+        }
+
+        // only supported on iOS9+, so check this.. if not supported just report back as false
+        if (![laContext respondsToSelector:@selector(evaluatedPolicyDomainState)]) {
+            [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:NO] callbackId:command.callbackId];
+            return;
+        }
+
+        NSData * state = [laContext evaluatedPolicyDomainState];
+        if (state != nil) {
+
+            NSString * stateStr = [state base64EncodedStringWithOptions:0];
+
+            NSString * storedState = [[NSUserDefaults standardUserDefaults] stringForKey:FingerprintDatabaseStateKey];
+
+            // whenever a finger is added/changed/removed the value of the storedState changes,
+            // so compare agains a value we previously stored in the context of this app
+            BOOL changed = storedState != nil && ![stateStr isEqualToString:storedState];
+
+            [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:changed] callbackId:command.callbackId];
+
+            // Store enrollment
+            [[NSUserDefaults standardUserDefaults] setObject:stateStr forKey:FingerprintDatabaseStateKey];
+            [[NSUserDefaults standardUserDefaults] synchronize];
+        }
+    }];
 }
 @end

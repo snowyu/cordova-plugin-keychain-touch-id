@@ -191,9 +191,14 @@ var touchid = {
    */
   delete: function(key,successCallback, errorCallback){
 		exec(successCallback, errorCallback, "TouchID", "delete", [key]);
-	}
+	},
 
   // ==========================================================================================================================================
+
+
+  didFingerprintDatabaseChange: function (successCallback, errorCallback) {
+  		exec(successCallback, errorCallback, "TouchID", "didFingerprintDatabaseChange", []);
+  }
 
 };
 
