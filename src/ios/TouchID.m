@@ -191,6 +191,30 @@
 
 }
 
+/**
+
+ verify
+
+ (-7)  ERROR - Key not found.
+ (-3)  ERROR - Generic Error.
+ (-8)  ERROR - Canceled by user.
+ (-9)  ERROR - Authentication failed.
+ (-20) ERROR - Canceled by user for fallback authentication.
+ (-21) ERROR - Touch ID is locked out
+
+ SUCCESS - Value returned
+
+ Error Object
+ {
+    errCode: X,
+    errMsg: "",
+    ext: {
+        os : "ios",
+        code: "original os error code",
+        desc: "original os error message"
+    }
+ }
+ **/
 -(void)verify:(CDVInvokedUrlCommand*)command{
 	 	self.TAG = (NSString*)[command.arguments objectAtIndex:0];
 	  NSString* message = (NSString*)[command.arguments objectAtIndex:1];
@@ -212,7 +236,32 @@
                     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
                 }
                     if(error != nil) {
-                        NSDictionary *errorDictionary = @{@"OS":@"iOS",@"ErrorCode":[NSString stringWithFormat:@"%li", (long)error.code],@"ErrorMessage":error.localizedDescription};
+
+                        long errorCode = -3;
+                        NSString *errorMsg = @"Touch ID Generic Error.";
+
+                        if (error.code == LAErrorUserCancel){
+                            errorCode = -8;
+                            errorMsg = @"Canceled by user.";
+                        }
+
+                        if (error.code == LAErrorUserFallback){
+                            errorCode = -20;
+                            errorMsg = @"Canceled by user for fallback authentication.";
+                        }
+
+                        if (error.code == LAErrorTouchIDLockout){
+                            errorCode = -21;
+                            errorMsg = @"Touch ID is locked out."; //probably for Application retry limit exceeded.
+                        }
+
+                        if (error.code == LAErrorAuthenticationFailed){
+                            errorCode = -9;
+                            errorMsg = @"Authentication failed.";
+                        }
+
+                        NSDictionary *extErrorDictionary = @{@"OS":@"iOS",@"code":[NSString stringWithFormat:@"%li", (long)error.code],@"desc":error.localizedDescription};
+                        NSDictionary *errorDictionary = @{@"errCode":[NSString stringWithFormat:@"%li", (long)errorCode],@"errMsg":errorMsg, @"ext": extErrorDictionary};
                         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
                         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
                     }
@@ -221,24 +270,32 @@
 
         }
         else{
+
+            // by default is a generic error
+            long errorCode = -3;
+            NSString *errorMsg = @"Touch ID Generic Error.";
+
             if(error)
             {
                 //If an error is returned from LA Context (should always be true in this situation)
-                NSDictionary *errorDictionary = @{@"OS":@"iOS",@"ErrorCode":[NSString stringWithFormat:@"%li", (long)error.code],@"ErrorMessage":error.localizedDescription};
+                NSDictionary *extErrorDictionary = @{@"OS":@"iOS",@"code":[NSString stringWithFormat:@"%li", (long)error.code],@"desc":error.localizedDescription};
+                NSDictionary *errorDictionary = @{@"errCode":[NSString stringWithFormat:@"%li", (long)errorCode],@"errMsg":errorMsg, @"ext": extErrorDictionary};
                 CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
             }
             else
             {
                 //Should never come to this, but we treat it anyway
-                CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString: @"Touch ID not available"];
+                NSDictionary *errorDictionary = @{@"errCode":[NSString stringWithFormat:@"%li", (long)errorCode],@"errMsg":errorMsg};
+                CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary: errorDictionary];
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
             }
         }
     }
     else{
-           CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString: @"-1"];
-            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        NSDictionary *errorDictionary = @{@"errCode":@"-7", @"errMsg":@"Key not found." };
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }
 }
 @end
