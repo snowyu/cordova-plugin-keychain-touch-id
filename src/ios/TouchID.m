@@ -24,6 +24,27 @@
 
 @implementation TouchID
 
+/**
+
+ isAvailable
+
+ (-1) ERROR - Biometry not availble on this device
+ (-2) ERROR - Biometry availble on this device but not enrolled
+ (-3) ERROR - Generic Error
+
+ SUCCESS - Fingerprint available and enrolled
+
+ Error Object
+ {
+     errCode: X,
+     errMsg: "",
+     ext: {
+         os : "ios",
+         code: "original os error code",
+         desc: "original os error message"
+     }
+ }
+ **/
 - (void)isAvailable:(CDVInvokedUrlCommand*)command{
 
     self.laContext = [[LAContext alloc] init];
@@ -34,17 +55,33 @@
        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }
     else{
+        // by default is a generic error
+        long errorCode = -3;
+        NSString *errorMsg = @"Touch ID Generic Error.";
+
        if(error)
        {
            //If an error is returned from LA Context (should always be true in this situation)
-           NSDictionary *errorDictionary = @{@"OS":@"iOS",@"ErrorCode":[NSString stringWithFormat:@"%li", (long)error.code],@"ErrorMessage":error.localizedDescription};
+           NSDictionary *extErrorDictionary = @{@"OS":@"iOS",@"code":[NSString stringWithFormat:@"%li", (long)error.code],@"desc":error.localizedDescription};
+
+           if (error.code == LAErrorTouchIDNotAvailable){
+               errorCode = -1;
+               errorMsg = @"Touch ID is not available on the device.";
+           }
+           if (error.code == LAErrorTouchIDNotEnrolled){
+               errorCode = -2;
+               errorMsg = @"Touch ID has no enrolled fingers.";
+           }
+
+           NSDictionary *errorDictionary = @{@"errCode":[NSString stringWithFormat:@"%li", (long)errorCode],@"errMsg":errorMsg, @"ext": extErrorDictionary};
            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
        }
        else
        {
            //Should never come to this, but we treat it anyway
-           CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString: @"Touch ID not available"];
+           NSDictionary *errorDictionary = @{@"errCode":[NSString stringWithFormat:@"%li", (long)errorCode],@"errMsg":errorMsg};
+           CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary: errorDictionary];
            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
        }
     }
@@ -55,21 +92,42 @@
   [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
+/**
+
+ has
+
+ **/
 - (void)has:(CDVInvokedUrlCommand*)command{
+
   	self.TAG = (NSString*)[command.arguments objectAtIndex:0];
     BOOL hasLoginKey = [[NSUserDefaults standardUserDefaults] boolForKey:self.TAG];
-    if(hasLoginKey){
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-    }
-    else{
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString: @"No Password in chain"];
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-    }
+
+    NSDictionary *result = @{@"result": [NSNumber numberWithBool:hasLoginKey] };
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary: result];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+
 }
 
+/**
+
+ save
+
+ (-5) ERROR - Value could not be saved
+
+ Error Object
+ {
+    errCode: -5,
+    errMsg: "Value could not be saved",
+    ext: {
+        os : "ios",
+        code: "original os error code",
+        desc: "original os error message"
+    }
+ }
+ **/
 - (void)save:(CDVInvokedUrlCommand*)command{
-	 	self.TAG = (NSString*)[command.arguments objectAtIndex:0];
+
+    self.TAG = (NSString*)[command.arguments objectAtIndex:0];
     NSString* password = (NSString*)[command.arguments objectAtIndex:1];
     @try {
         self.MyKeychainWrapper = [[KeychainWrapper alloc]init];
@@ -82,11 +140,32 @@
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }
     @catch(NSException *exception){
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString: @"Password could not be save in chain"];
+        NSDictionary *extErrorDictionary = @{@"OS":@"iOS",@"code":exception.name,@"desc":exception.reason};
+        NSDictionary *errorDictionary = @{@"errCode":@"-5", @"errMsg":@"Value could not be saved.", @"ext": extErrorDictionary};
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }
+
 }
 
+/**
+
+ delete
+
+ (-6) ERROR - Value could not be saved
+
+ Error Object
+ {
+    errCode: -6,
+    errMsg: "Value could not be deleted",
+    ext: {
+        os : "ios",
+        code: "original os error code",
+        desc: "original os error message"
+    }
+ }
+
+ **/
 -(void)delete:(CDVInvokedUrlCommand*)command{
 	 	self.TAG = (NSString*)[command.arguments objectAtIndex:0];
     @try {
@@ -103,7 +182,9 @@
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }
     @catch(NSException *exception) {
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString: @"Could not delete password from chain"];
+        NSDictionary *extErrorDictionary = @{@"OS":@"iOS",@"code":exception.name,@"desc":exception.reason};
+        NSDictionary *errorDictionary = @{@"errCode":@"-6", @"errMsg":@"Value could not be deleted.", @"ext": extErrorDictionary};
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }
 
