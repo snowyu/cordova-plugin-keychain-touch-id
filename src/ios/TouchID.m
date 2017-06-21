@@ -22,6 +22,38 @@
 #include <sys/sysctl.h>
 #import <Cordova/CDV.h>
 
+#define FPP_ERROR_CODE_TOUCHID_NOT_AVAILABLE_ON_THIS_DEVICE     -1
+#define FPP_ERROR_MSG_TOUCHID_NOT_AVAILABLE_ON_THIS_DEVICE      @"Touch ID is not available on the device."
+
+#define FPP_ERROR_CODE_NOT_ENROLLED                            -2
+#define FPP_ERROR_MSG_NOT_ENROLLED                             @"Touch ID has no enrolled fingers."
+
+
+#define FPP_ERROR_CODE_GENERIC_ERROR                            -3
+#define FPP_ERROR_MSG_GENERIC_ERROR                             @"Touch ID Generic Error."
+
+#define FPP_ERROR_CODE_VALUE_COULD_NOT_BE_SAVED                 -5
+#define FPP_ERROR_MSG_VALUE_COULD_NOT_BE_SAVED                  @"Value could not be saved."
+
+#define FPP_ERROR_CODE_VALUE_COULD_NOT_BE_DELETED               -6
+#define FPP_ERROR_MSG_VALUE_COULD_NOT_BE_DELETED                 @"Value could not be deleted."
+
+#define FPP_ERROR_CODE_KEY_NOT_FOUND                            -7
+#define FPP_ERROR_MSG_KEY_NOT_FOUND                             @"Key not found."
+
+#define FPP_ERROR_CODE_USER_CANCELED                            -8
+#define FPP_ERROR_MSG_USER_CANCELED                             @"Canceled by user."
+
+#define FPP_ERROR_CODE_AUTHENTICATION_FAILED                    -9
+#define FPP_ERROR_MSG_AUTHENTICATION_FAILED                     @"Authentication failed."
+
+#define FPP_ERROR_CODE_TOUCHID_LOCKED_OUT                       -10
+#define FPP_ERROR_MSG_TOUCHID_LOCKED_OUT                         @"Touch ID is locked out."
+
+#define FPP_ERROR_CODE_USER_FALLBACK                            -20
+#define FPP_ERROR_MSG_USER_FALLBACK                             @"Canceled by user for fallback authentication."
+
+
 @implementation TouchID
 
 /**
@@ -31,6 +63,7 @@
  (-1) ERROR - Biometry not availble on this device
  (-2) ERROR - Biometry availble on this device but not enrolled
  (-3) ERROR - Generic Error
+ (-10) ERROR - Touch ID is locked out
 
  SUCCESS - Fingerprint available and enrolled
 
@@ -56,7 +89,7 @@
     }
     else{
         // by default is a generic error
-        long errorCode = -3;
+        long errorCode = FPP_ERROR_CODE_GENERIC_ERROR;
         NSString *errorMsg = @"Touch ID Generic Error.";
 
        if(error)
@@ -65,12 +98,17 @@
            NSDictionary *extErrorDictionary = @{@"OS":@"iOS",@"code":[NSString stringWithFormat:@"%li", (long)error.code],@"desc":error.localizedDescription};
 
            if (error.code == LAErrorTouchIDNotAvailable){
-               errorCode = -1;
-               errorMsg = @"Touch ID is not available on the device.";
+               errorCode = FPP_ERROR_CODE_TOUCHID_NOT_AVAILABLE_ON_THIS_DEVICE;
+               errorMsg = FPP_ERROR_MSG_TOUCHID_NOT_AVAILABLE_ON_THIS_DEVICE;
            }
            if (error.code == LAErrorTouchIDNotEnrolled){
-               errorCode = -2;
-               errorMsg = @"Touch ID has no enrolled fingers.";
+               errorCode = FPP_ERROR_CODE_NOT_ENROLLED;
+               errorMsg = FPP_ERROR_MSG_NOT_ENROLLED;
+           }
+
+           if (error.code == LAErrorTouchIDLockout){
+               errorCode = FPP_ERROR_CODE_TOUCHID_LOCKED_OUT;
+               errorMsg = FPP_ERROR_MSG_TOUCHID_LOCKED_OUT; //probably for Application retry limit exceeded.
            }
 
            NSDictionary *errorDictionary = @{@"errCode":[NSString stringWithFormat:@"%li", (long)errorCode],@"errMsg":errorMsg, @"ext": extErrorDictionary};
@@ -141,7 +179,7 @@
     }
     @catch(NSException *exception){
         NSDictionary *extErrorDictionary = @{@"OS":@"iOS",@"code":exception.name,@"desc":exception.reason};
-        NSDictionary *errorDictionary = @{@"errCode":@"-5", @"errMsg":@"Value could not be saved.", @"ext": extErrorDictionary};
+        NSDictionary *errorDictionary = @{@"errCode":[NSString stringWithFormat:@"%d", FPP_ERROR_CODE_VALUE_COULD_NOT_BE_SAVED], @"errMsg":FPP_ERROR_MSG_VALUE_COULD_NOT_BE_SAVED, @"ext": extErrorDictionary};
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }
@@ -152,7 +190,7 @@
 
  delete
 
- (-6) ERROR - Value could not be saved
+ (-6) ERROR - Value could not be deleted
 
  Error Object
  {
@@ -183,7 +221,7 @@
     }
     @catch(NSException *exception) {
         NSDictionary *extErrorDictionary = @{@"OS":@"iOS",@"code":exception.name,@"desc":exception.reason};
-        NSDictionary *errorDictionary = @{@"errCode":@"-6", @"errMsg":@"Value could not be deleted.", @"ext": extErrorDictionary};
+        NSDictionary *errorDictionary = @{@"errCode":[NSString stringWithFormat:@"%d", FPP_ERROR_CODE_VALUE_COULD_NOT_BE_DELETED], @"errMsg":FPP_ERROR_MSG_VALUE_COULD_NOT_BE_DELETED, @"ext": extErrorDictionary};
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }
@@ -199,8 +237,8 @@
  (-3)  ERROR - Generic Error.
  (-8)  ERROR - Canceled by user.
  (-9)  ERROR - Authentication failed.
+ (-10) ERROR - Touch ID is locked out
  (-20) ERROR - Canceled by user for fallback authentication.
- (-21) ERROR - Touch ID is locked out
 
  SUCCESS - Value returned
 
@@ -237,27 +275,27 @@
                 }
                     if(error != nil) {
 
-                        long errorCode = -3;
-                        NSString *errorMsg = @"Touch ID Generic Error.";
+                        long errorCode = FPP_ERROR_CODE_GENERIC_ERROR;
+                        NSString *errorMsg = FPP_ERROR_MSG_GENERIC_ERROR;
 
                         if (error.code == LAErrorUserCancel){
-                            errorCode = -8;
-                            errorMsg = @"Canceled by user.";
+                            errorCode = FPP_ERROR_CODE_USER_CANCELED;
+                            errorMsg = FPP_ERROR_MSG_USER_CANCELED;
                         }
 
                         if (error.code == LAErrorUserFallback){
-                            errorCode = -20;
-                            errorMsg = @"Canceled by user for fallback authentication.";
+                            errorCode = FPP_ERROR_CODE_USER_FALLBACK;
+                            errorMsg = FPP_ERROR_MSG_USER_FALLBACK;
                         }
 
                         if (error.code == LAErrorTouchIDLockout){
-                            errorCode = -21;
-                            errorMsg = @"Touch ID is locked out."; //probably for Application retry limit exceeded.
+                            errorCode = FPP_ERROR_CODE_TOUCHID_LOCKED_OUT;
+                            errorMsg = FPP_ERROR_MSG_TOUCHID_LOCKED_OUT; //probably for Application retry limit exceeded.
                         }
 
                         if (error.code == LAErrorAuthenticationFailed){
-                            errorCode = -9;
-                            errorMsg = @"Authentication failed.";
+                            errorCode =FPP_ERROR_CODE_AUTHENTICATION_FAILED;
+                            errorMsg = FPP_ERROR_MSG_AUTHENTICATION_FAILED;
                         }
 
                         NSDictionary *extErrorDictionary = @{@"OS":@"iOS",@"code":[NSString stringWithFormat:@"%li", (long)error.code],@"desc":error.localizedDescription};
@@ -272,11 +310,16 @@
         else{
 
             // by default is a generic error
-            long errorCode = -3;
-            NSString *errorMsg = @"Touch ID Generic Error.";
+            long errorCode = FPP_ERROR_CODE_GENERIC_ERROR;
+            NSString *errorMsg = FPP_ERROR_MSG_GENERIC_ERROR;
 
             if(error)
             {
+                if (error.code == LAErrorTouchIDLockout){
+                    errorCode = FPP_ERROR_CODE_TOUCHID_LOCKED_OUT;
+                    errorMsg = FPP_ERROR_MSG_TOUCHID_LOCKED_OUT; //probably for Application retry limit exceeded.
+                }
+
                 //If an error is returned from LA Context (should always be true in this situation)
                 NSDictionary *extErrorDictionary = @{@"OS":@"iOS",@"code":[NSString stringWithFormat:@"%li", (long)error.code],@"desc":error.localizedDescription};
                 NSDictionary *errorDictionary = @{@"errCode":[NSString stringWithFormat:@"%li", (long)errorCode],@"errMsg":errorMsg, @"ext": extErrorDictionary};
@@ -293,7 +336,7 @@
         }
     }
     else{
-        NSDictionary *errorDictionary = @{@"errCode":@"-7", @"errMsg":@"Key not found." };
+        NSDictionary *errorDictionary = @{@"errCode":[NSString stringWithFormat:@"%d", FPP_ERROR_CODE_KEY_NOT_FOUND], @"errMsg":FPP_ERROR_MSG_KEY_NOT_FOUND };
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }
