@@ -23,14 +23,14 @@
 #import <Cordova/CDV.h>
 
 #define FPP_ERROR_CODE_TOUCHID_NOT_AVAILABLE_ON_THIS_DEVICE     -1
-#define FPP_ERROR_MSG_TOUCHID_NOT_AVAILABLE_ON_THIS_DEVICE      @"Touch ID is not available on the device."
+#define FPP_ERROR_MSG_TOUCHID_NOT_AVAILABLE_ON_THIS_DEVICE      @"Biometric is not available on the device."
 
 #define FPP_ERROR_CODE_NOT_ENROLLED                            -2
-#define FPP_ERROR_MSG_NOT_ENROLLED                             @"Touch ID has no enrolled fingers."
+#define FPP_ERROR_MSG_NOT_ENROLLED                             @"No identities are enrolled."
 
 
 #define FPP_ERROR_CODE_GENERIC_ERROR                            -3
-#define FPP_ERROR_MSG_GENERIC_ERROR                             @"Touch ID Generic Error."
+#define FPP_ERROR_MSG_GENERIC_ERROR                             @"Biometric Generic Error."
 
 #define FPP_ERROR_CODE_VALUE_COULD_NOT_BE_SAVED                 -5
 #define FPP_ERROR_MSG_VALUE_COULD_NOT_BE_SAVED                  @"Value could not be saved."
@@ -48,11 +48,10 @@
 #define FPP_ERROR_MSG_AUTHENTICATION_FAILED                     @"Authentication failed."
 
 #define FPP_ERROR_CODE_TOUCHID_LOCKED_OUT                       -10
-#define FPP_ERROR_MSG_TOUCHID_LOCKED_OUT                         @"Touch ID is locked out."
+#define FPP_ERROR_MSG_TOUCHID_LOCKED_OUT                         @"Biometric is locked out."
 
 #define FPP_ERROR_CODE_USER_FALLBACK                            -20
 #define FPP_ERROR_MSG_USER_FALLBACK                             @"Canceled by user for fallback authentication."
-
 
 static NSString *const FingerprintDatabaseStateKey = @"FingerprintDatabaseStateKey";
 
