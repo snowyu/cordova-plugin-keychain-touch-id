@@ -83,6 +83,8 @@ will delete the password stored under given key from the keychain
 **didFingerprintDatabaseChange(successCallback, errorCallback)**
 IOS ONLY! checks fingerprint database and returns whether it has been modified or not
 
+**biometricType(successCallback, errorCallback)**
+Check the type f biometric check if available: TOUCH or FACE are the available values.
 
 ## Security++
 Since iOS9 it's possible to check whether or not the list of enrolled fingerprints changed since
@@ -154,4 +156,11 @@ if (window.plugins) {
         alert("Password key deleted");
     });
 }
+
+if (window.plugins) {
+    window.plugins.touchid.isAvailable(function() {
+        window.plugins.touchid.biometricType(function(success){ console.log("Biometric type: ", success); }, function(failure){ console.log    ("Error ", failure); })
+    });
+}
+
 ```

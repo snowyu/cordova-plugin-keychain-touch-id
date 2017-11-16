@@ -198,7 +198,11 @@ var touchid = {
 
   didFingerprintDatabaseChange: function (successCallback, errorCallback) {
   		exec(successCallback, errorCallback, "TouchID", "didFingerprintDatabaseChange", []);
-  }
+  },
+
+  biometricType: function(successCallback, errorCallback){
+		exec(successCallback, errorCallback, "TouchID", "biometricType", []);
+	}
 
 };
 
