@@ -73,6 +73,7 @@ public class FingerprintAuthAux {
     private static final String HAS = "has";
     private static final String DELETE = "delete";
     private static final String MOVE = "move";
+    private static final String BIOMETRIC_TYPE = "biometricType";
 
     /**
      * Alias for our key in the Android Key Store
@@ -303,6 +304,16 @@ public class FingerprintAuthAux {
                 }
             } else {
                 mPluginResult = new PluginResult(PluginResult.Status.ERROR, FingerprintError.FingerprintNotAvailable.toJSON());
+            }
+            mCallbackContext.sendPluginResult(mPluginResult);
+            return true;
+        } else if (action.equals(BIOMETRIC_TYPE)) {
+            mPluginResult = new PluginResult(PluginResult.Status.OK);
+            if (isFingerprintAuthAvailable()) {
+                mCallbackContext.success("TOUCH");
+            }
+            else {
+                mCallbackContext.success("NONE");
             }
             mCallbackContext.sendPluginResult(mPluginResult);
             return true;
