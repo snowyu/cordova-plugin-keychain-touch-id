@@ -35,5 +35,6 @@
 - (void) verify:(CDVInvokedUrlCommand*)command;
 - (void) delete:(CDVInvokedUrlCommand*)command;
 - (void) setLocale:(CDVInvokedUrlCommand*)command;
+- (void) didFingerprintDatabaseChange:(CDVInvokedUrlCommand*)command;
 
 @end

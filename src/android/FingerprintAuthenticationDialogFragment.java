@@ -16,24 +16,25 @@
 
 package com.cordova.plugin.android.fingerprintauth;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.DialogFragment;
 import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.hardware.fingerprint.FingerprintManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
+
+import org.apache.cordova.LOG;
 
 import org.apache.cordova.CordovaInterface;
 
@@ -61,6 +62,7 @@ public class FingerprintAuthenticationDialogFragment extends DialogFragment
     public FingerprintAuthenticationDialogFragment() {
     }
 
+    @TargetApi(Build.VERSION_CODES.M)
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -170,6 +172,7 @@ public class FingerprintAuthenticationDialogFragment extends DialogFragment
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void showAuthenticationScreen() {
         // Create the Confirm Credentials screen. You can customize the title and description. Or
         // we will provide a generic one for you if you leave it null
@@ -203,8 +206,10 @@ public class FingerprintAuthenticationDialogFragment extends DialogFragment
     }
 
     @Override
-    public void onError() {
-
+    public void onError(int errMsgId, String errString) {
+        LOG.e("onError","Code: " +  errMsgId + "; Message:",errString);
+        mFingerPrintAuth.onAutenticationError(errMsgId);
+        dismiss();
     }
 
     @Override

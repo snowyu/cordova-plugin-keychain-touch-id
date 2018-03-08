@@ -81,7 +81,7 @@ import org.json.JSONObject;
       throws JSONException {
 
     mCallbackContext = callbackContext;
-          
+
     if (android.os.Build.VERSION.SDK_INT < 23) {
       String errorMessage = createErrorMessage(NO_HARDWARE_CODE, NO_HARDWARE_MESSAGE);
       mPluginResult = new PluginResult(PluginResult.Status.ERROR, errorMessage);
